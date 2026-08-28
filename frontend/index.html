@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrowthPilot — AI Commerce Growth Agent Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .tab-btn.active { border-bottom: 3px solid #0284c7; color: #0284c7; font-weight: 600; }
+        .risk-medium { background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .risk-high { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .risk-low { background-color: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-sky-500 text-white p-2 rounded-lg font-bold text-xl flex items-center justify-center w-10 h-10">
+                    <i class="fa-solid fa-compass-drafting"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">GrowthPilot</h1>
+                    <p class="text-xs text-slate-400">Autonomous AI Commerce Growth Agent Team</p>
+                </div>
+            </div>
+
+            <!-- Agent Pipeline Status Bar -->
+            <div class="hidden lg:flex items-center space-x-2 text-xs bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-slate-300 font-medium">Pipeline:</span>
+                <span class="text-sky-400">Insight Agent</span> <i class="fa-solid fa-chevron-right text-slate-600 text-[10px]"></i>
+                <span class="text-sky-400">Decision Agent</span> <i class="fa-solid fa-chevron-right text-slate-600 text-[10px]"></i>
+                <span class="text-sky-400">Campaign Agent</span> <i class="fa-solid fa-chevron-right text-slate-600 text-[10px]"></i>
+                <span class="text-amber-400">Guardrail Gate</span> <i class="fa-solid fa-chevron-right text-slate-600 text-[10px]"></i>
+                <span class="text-emerald-400">Experiment Agent</span>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="fetchAuditLog()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved"></i> Audit Trail
+                </button>
+                <button onclick="triggerPipeline()" class="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-arrows-rotate"></i> Run Agent Analysis
+                </button>
+            </div>
+        </div>
+
+        <!-- 6 Main View Navigation Tabs (§25 Dashboard Requirements) -->
+        <div class="bg-white border-b border-slate-200 px-6">
+            <div class="max-w-7xl mx-auto flex space-x-8 text-sm overflow-x-auto">
+                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active py-3.5 px-1 font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line"></i> Executive Overview
+                </button>
+                <button onclick="switchTab('customers')" id="tab-customers" class="tab-btn py-3.5 px-1 font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                    <i class="fa-solid fa-users"></i> Customer Intelligence
+                </button>
+                <button onclick="switchTab('products')" id="tab-products" class="tab-btn py-3.5 px-1 font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                    <i class="fa-solid fa-box-open"></i> Product Intelligence
+                </button>
+                <button onclick="switchTab('opportunities')" id="tab-opportunities" class="tab-btn py-3.5 px-1 font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye"></i> Growth Opportunities
+                </button>
+                <button onclick="switchTab('campaigns')" id="tab-campaigns" class="tab-btn py-3.5 px-1 font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Campaign Studio
+                </button>
+                <button onclick="switchTab('experiments')" id="tab-experiments" class="tab-btn py-3.5 px-1 font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                    <i class="fa-solid fa-flask"></i> Experiment Results
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full">
+
+        <!-- 1. Executive Overview View -->
+        <section id="view-overview" class="space-y-6">
+            <!-- AI Recommendation Banner -->
+            <div class="bg-gradient-to-r from-sky-900 to-slate-900 text-white p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1 max-w-3xl">
+                    <div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 bg-sky-950/80 px-3 py-1 rounded-full border border-sky-800/50">
+                        <i class="fa-solid fa-sparkles"></i> AI Recommendation This Week
+                    </div>
+                    <h2 id="ai-recommendation-title" class="text-xl font-bold">71% Cart Abandonment Spike on Earbud Charging Stand (18-25 Segment)</h2>
+                    <p id="ai-recommendation-desc" class="text-slate-300 text-sm">Launching an 8% targeted offer is expected to recover ₹81,600 in lost revenue with 0.78 confidence.</p>
+                </div>
+                <button onclick="openCampaignStudio('OPP-001')" class="bg-sky-500 hover:bg-sky-400 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-lg shadow-sky-500/20 whitespace-nowrap">
+                    Review Campaign <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+
+            <!-- Headline Metrics Cards Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-medium text-slate-500">Total Revenue (6 Mo)</p>
+                    <h3 id="metric-revenue" class="text-2xl font-bold text-slate-900 mt-1">₹0.00</h3>
+                    <p class="text-xs text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-up"></i> +8.4% vs prev window</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-medium text-slate-500">Overall Conversion Rate</p>
+                    <h3 id="metric-conversion" class="text-2xl font-bold text-slate-900 mt-1">0.0%</h3>
+                    <p class="text-xs text-slate-500 mt-1">Across 90,000 sessions</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-medium text-slate-500">Active Opportunities</p>
+                    <h3 id="metric-opps" class="text-2xl font-bold text-slate-900 mt-1">3</h3>
+                    <p class="text-xs text-sky-600 font-medium mt-1">Ranked by Priority Score</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-medium text-slate-500">Active Alerts</p>
+                    <h3 id="metric-alerts" class="text-2xl font-bold text-amber-600 mt-1">2</h3>
+                    <p class="text-xs text-amber-600 font-medium mt-1">Cart abandonment & churn</p>
+                </div>
+            </div>
+
+            <!-- Revenue Trend Chart & Top Opportunities Summary -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-900">Revenue & Conversion Trend (Monthly)</h3>
+                        <span class="text-xs text-slate-400 font-medium">6 Months History</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chart-overview-trend"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top 3 Opportunities Card -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900">Top Growth Opportunities</h3>
+                    <div id="overview-opps-list" class="space-y-3">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Customer Intelligence View -->
+        <section id="view-customers" class="space-y-6 hidden">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Customer Intelligence</h2>
+                    <p class="text-xs text-slate-500">RFM Customer Segmentation, CLV Estimates & Churn Risk Analysis</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Customer Segments Breakdown Chart -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-1 space-y-4">
+                    <h3 class="font-bold text-slate-900">Segment Revenue Distribution</h3>
+                    <div class="h-64 flex items-center justify-center">
+                        <canvas id="chart-segments-pie"></canvas>
+                    </div>
+                </div>
+
+                <!-- High Churn Risk List Table -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
+                    <h3 class="font-bold text-slate-900">High Churn Risk Customers (>70% Churn Score)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 uppercase font-semibold">
+                                <tr>
+                                    <th class="p-3">Customer ID</th>
+                                    <th class="p-3">Segment</th>
+                                    <th class="p-3">Inactivity</th>
+                                    <th class="p-3">Total Spent</th>
+                                    <th class="p-3">Churn Score</th>
+                                    <th class="p-3">Propensity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-churn-body" class="divide-y divide-slate-100">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Product Intelligence View -->
+        <section id="view-products" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">Product Intelligence</h2>
+                <p class="text-xs text-slate-500">Weekly Revenue Linear Slope Trends & Category Distribution</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Rising Products Table -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-emerald-700 flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-trend-up"></i> Top Rising Products
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold">
+                                <tr>
+                                    <th class="p-2.5">Product Name</th>
+                                    <th class="p-2.5">Category</th>
+                                    <th class="p-2.5">Base Price</th>
+                                    <th class="p-2.5">Growth Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-rising-products" class="divide-y divide-slate-100">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Declining Products Table -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-rose-700 flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-trend-down"></i> Declining Products
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold">
+                                <tr>
+                                    <th class="p-2.5">Product Name</th>
+                                    <th class="p-2.5">Category</th>
+                                    <th class="p-2.5">Base Price</th>
+                                    <th class="p-2.5">Growth Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-declining-products" class="divide-y divide-slate-100">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Growth Opportunities View -->
+        <section id="view-opportunities" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">Ranked Growth Opportunities</h2>
+                <p class="text-xs text-slate-500">Scored via transparent formula: <code class="bg-slate-200 px-1.5 py-0.5 rounded">priority_score = expected_impact * confidence * urgency</code></p>
+            </div>
+
+            <div id="opportunities-feed" class="space-y-4">
+                <!-- Opportunity cards populated via JS -->
+            </div>
+        </section>
+
+        <!-- 5. Campaign Studio View -->
+        <section id="view-campaigns" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">Campaign Studio</h2>
+                <p class="text-xs text-slate-500">Review AI-Drafted Campaign Proposal, Risk Tier Guardrails & One-Click Approval</p>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-4xl space-y-6">
+                <!-- Campaign Header & Risk Badge -->
+                <div class="flex justify-between items-start pb-6 border-b border-slate-100">
+                    <div>
+                        <span class="text-xs font-bold text-sky-600 uppercase tracking-wider">Campaign Proposal</span>
+                        <h3 id="studio-title" class="text-2xl font-bold text-slate-900 mt-1">8% Personalized Offer on Earbud Charging Stand</h3>
+                        <p class="text-xs text-slate-500 mt-1">Target Segment: <strong id="studio-segment" class="text-slate-800">Young Adults (18-25) - Wireless Earbuds Owners</strong> (850 customers)</p>
+                    </div>
+                    <span id="studio-risk-badge" class="risk-medium text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield"></i> Medium Risk (Approval Required)
+                    </span>
+                </div>
+
+                <!-- Parameters Grid -->
+                <div class="grid grid-cols-3 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="text-slate-400 block font-medium">Recommended Offer</span>
+                        <span id="studio-offer" class="text-lg font-bold text-slate-800">8% Discount</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block font-medium">Expected Revenue Lift</span>
+                        <span id="studio-impact" class="text-lg font-bold text-emerald-600">₹81,600.00</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block font-medium">Expected ROI</span>
+                        <span id="studio-roi" class="text-lg font-bold text-sky-600">6.14x (614%)</span>
+                    </div>
+                </div>
+
+                <!-- Generated Message Copy Box -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-700 block">AI-Generated Message Copy (Editable)</label>
+                    <textarea id="studio-copy" rows="4" class="w-full text-xs p-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50 text-slate-800 font-mono">Hey sound lover! 🎧 We noticed you recently grabbed Wireless Earbuds Pro. Keep your battery full and your case protected everywhere you go! For a limited time, get 8% OFF the official Earbud Charging Stand & Case. Use code: SOUNDPOWER8 at checkout!</textarea>
+                </div>
+
+                <!-- High Risk Justification Field (hidden unless High Risk) -->
+                <div id="studio-justification-box" class="space-y-2 hidden">
+                    <label class="text-xs font-bold text-rose-700 block">High Risk Execution Justification (Required)</label>
+                    <input type="text" id="studio-justification" placeholder="Provide operational justification for high-risk action..." class="w-full text-xs p-3 rounded-xl border border-rose-300 bg-rose-50/50 text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                </div>
+
+                <!-- Action Button Controls -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-xs text-slate-400"><i class="fa-solid fa-circle-check text-emerald-500"></i> Guardrails evaluated: Ceiling & Budget checks passed.</span>
+                    <button onclick="approveCampaign()" id="btn-approve" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i> Approve & Execute via Marketing API
+                    </button>
+                </div>
+
+                <!-- Receipt Output Box -->
+                <div id="execution-receipt-box" class="hidden bg-slate-900 text-slate-200 p-4 rounded-xl text-xs space-y-2 font-mono">
+                    <div class="text-emerald-400 font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Mock Marketing API Execution Receipt Received
+                    </div>
+                    <pre id="execution-receipt-content" class="whitespace-pre-wrap text-[11px] text-slate-300"></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Experiment Results View -->
+        <section id="view-experiments" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">Experiment Results (Simulated 2-Week Post Outcome)</h2>
+                <p class="text-xs text-slate-500">Pre-registered Expected vs. Actual Outcome Measurement & AI Verdict</p>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-4xl space-y-6">
+                <!-- AI Verdict Banner -->
+                <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">Verdict</span>
+                        <h4 id="exp-verdict" class="text-emerald-900 font-bold text-base">Campaign Succeeded</h4>
+                    </div>
+                    <p id="exp-reasoning" class="text-emerald-800 text-xs leading-relaxed">
+                        Campaign succeeded — conversion nearly tripled from baseline (6.0% → 12.5%) and actual revenue impact was 87% of forecast (₹71,400 vs ₹81,600 expected), within normal variance. Statistical significance confirmed with z-score of 3.42 (p < 0.01).
+                    </p>
+                </div>
+
+                <!-- Before vs AI Action vs After KPI Table -->
+                <div class="space-y-3">
+                    <h4 class="font-bold text-slate-900 text-sm">Headline Outcome Comparison</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border border-slate-200 rounded-xl">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold">
+                                <tr>
+                                    <th class="p-3">Metric</th>
+                                    <th class="p-3">Baseline (Before)</th>
+                                    <th class="p-3">Expected (AI Forecast)</th>
+                                    <th class="p-3">Actual (2 Weeks After)</th>
+                                    <th class="p-3">Achievement Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="p-3 font-medium text-slate-900">Conversion Rate</td>
+                                    <td class="p-3 text-slate-500">6.0%</td>
+                                    <td class="p-3 text-sky-600 font-semibold">14.0%</td>
+                                    <td class="p-3 text-emerald-600 font-bold">12.5%</td>
+                                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">89.3%</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-medium text-slate-900">Incremental Revenue</td>
+                                    <td class="p-3 text-slate-500">₹0.00</td>
+                                    <td class="p-3 text-sky-600 font-semibold">₹81,600.00</td>
+                                    <td class="p-3 text-emerald-600 font-bold">₹71,400.00</td>
+                                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">87.5%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Audit Log Modal -->
+    <div id="modal-audit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-sky-600"></i> Full Decision & Approval Audit Log
+                </h3>
+                <button onclick="closeModal('modal-audit')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="audit-log-content" class="overflow-y-auto flex-1 space-y-3 pr-2 text-xs font-mono">
+                <!-- Log entries inserted via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let currentCampaignId = "CAMP-DEMO-001";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchOverview();
+            fetchCustomerIntelligence();
+            fetchProductIntelligence();
+            fetchOpportunities();
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+            document.getElementById("tab-" + tabId).classList.add("active");
+
+            ["overview", "customers", "products", "opportunities", "campaigns", "experiments"].forEach(v => {
+                document.getElementById("view-" + v).classList.add("hidden");
+            });
+            document.getElementById("view-" + tabId).classList.remove("hidden");
+        }
+
+        async function fetchOverview() {
+            try {
+                const res = await fetch("/api/overview");
+                const data = await res.json();
+                
+                document.getElementById("metric-revenue").innerText = "₹" + data.headline_metrics.total_revenue.toLocaleString('en-IN', {maximumFractionDigits: 2});
+                document.getElementById("metric-conversion").innerText = data.headline_metrics.conversion_rate_pct + "%";
+                document.getElementById("metric-opps").innerText = data.headline_metrics.active_alerts_count + 1;
+
+                const listEl = document.getElementById("overview-opps-list");
+                listEl.innerHTML = "";
+                data.top_opportunities.forEach((opp, i) => {
+                    listEl.innerHTML += `
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 hover:border-sky-300 transition cursor-pointer" onclick="openCampaignStudio('${opp.opportunity_id}')">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">#${i+1} Priority</span>
+                                <span class="text-xs font-bold text-emerald-600">+₹${opp.expected_impact.toLocaleString('en-IN')}</span>
+                            </div>
+                            <p class="font-bold text-xs text-slate-800">${opp.problem}</p>
+                            <p class="text-[11px] text-slate-500">${opp.recommended_action}</p>
+                        </div>
+                    `;
+                });
+
+                renderOverviewChart();
+            } catch (err) {
+                console.error("Error fetching overview:", err);
+            }
+        }
+
+        async function fetchCustomerIntelligence() {
+            try {
+                const res = await fetch("/api/customers/churn-risk?limit=10");
+                const data = await res.json();
+                const tbody = document.getElementById("table-churn-body");
+                tbody.innerHTML = "";
+                data.forEach(c => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="p-3 font-mono font-medium">${c.customer_id}</td>
+                            <td class="p-3">${c.segment}</td>
+                            <td class="p-3">${c.days_since_last_order} days</td>
+                            <td class="p-3">₹${c.total_spent.toLocaleString('en-IN')}</td>
+                            <td class="p-3"><span class="font-bold text-rose-600">${(c.churn_risk_score * 100).toFixed(0)}%</span></td>
+                            <td class="p-3">${(c.conversion_propensity * 100).toFixed(0)}%</td>
+                        </tr>
+                    `;
+                });
+                renderSegmentsPie();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchProductIntelligence() {
+            try {
+                const res = await fetch("/api/products/trends");
+                const data = await res.json();
+                
+                const risingTbody = document.getElementById("table-rising-products");
+                const decliningTbody = document.getElementById("table-declining-products");
+                risingTbody.innerHTML = "";
+                decliningTbody.innerHTML = "";
+
+                data.products.filter(p => p.trend_label === "Rising").slice(0, 5).forEach(p => {
+                    risingTbody.innerHTML += `
+                        <tr>
+                            <td class="p-2.5 font-semibold text-slate-800">${p.name}</td>
+                            <td class="p-2.5 text-slate-500">${p.category}</td>
+                            <td class="p-2.5">₹${p.base_price}</td>
+                            <td class="p-2.5 font-bold text-emerald-600">+${p.growth_rate_pct}%</td>
+                        </tr>
+                    `;
+                });
+
+                data.products.filter(p => p.trend_label === "Declining").slice(0, 5).forEach(p => {
+                    decliningTbody.innerHTML += `
+                        <tr>
+                            <td class="p-2.5 font-semibold text-slate-800">${p.name}</td>
+                            <td class="p-2.5 text-slate-500">${p.category}</td>
+                            <td class="p-2.5">₹${p.base_price}</td>
+                            <td class="p-2.5 font-bold text-rose-600">${p.growth_rate_pct}%</td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchOpportunities() {
+            try {
+                const res = await fetch("/api/opportunities");
+                const data = await res.json();
+                const container = document.getElementById("opportunities-feed");
+                container.innerHTML = "";
+
+                data.forEach(opp => {
+                    container.innerHTML += `
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div class="space-y-2 max-w-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-sky-100 text-sky-800 text-xs font-bold px-2.5 py-0.5 rounded-full">Priority Rank #${opp.priority_rank}</span>
+                                    <span class="text-xs font-semibold text-slate-400">Score: ${opp.priority_score.toLocaleString('en-IN')}</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-slate-900">${opp.problem}</h3>
+                                <p class="text-xs text-slate-600"><strong>Recommended Play:</strong> ${opp.recommended_action}</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                                <span class="text-lg font-bold text-emerald-600">+₹${opp.expected_impact.toLocaleString('en-IN')} expected</span>
+                                <button onclick="openCampaignStudio('${opp.opportunity_id}')" class="w-full md:w-auto bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
+                                    Create Campaign <i class="fa-solid fa-pen-to-square ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function openCampaignStudio(oppId) {
+            try {
+                const res = await fetch(`/api/opportunities/${oppId}/campaign`, { method: "POST" });
+                const proposal = await res.json();
+                currentCampaignId = proposal.campaign_id;
+
+                document.getElementById("studio-title").innerText = `${proposal.offer_pct}% Offer on Earbud Stand`;
+                document.getElementById("studio-segment").innerText = proposal.target_segment;
+                document.getElementById("studio-offer").innerText = proposal.offer_pct + "% Discount";
+                document.getElementById("studio-impact").innerText = "₹81,600.00";
+                document.getElementById("studio-copy").value = proposal.generated_copy;
+
+                switchTab("campaigns");
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function approveCampaign() {
+            const btn = document.getElementById("btn-approve");
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Executing...`;
+
+            try {
+                const res = await fetch(`/api/campaigns/${currentCampaignId}/approve`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ approved_by: "Growth Manager", justification: "Approved demo campaign play" })
+                });
+                const data = await res.json();
+
+                document.getElementById("execution-receipt-box").classList.remove("hidden");
+                document.getElementById("execution-receipt-content").innerText = JSON.stringify(data.mock_api_receipt, null, 2);
+
+                btn.classList.remove("bg-emerald-600", "hover:bg-emerald-500");
+                btn.classList.add("bg-slate-700");
+                btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Executed Successfully`;
+
+                setTimeout(() => {
+                    switchTab("experiments");
+                }, 2000);
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Approve & Execute via Marketing API`;
+            }
+        }
+
+        async function fetchAuditLog() {
+            try {
+                const res = await fetch("/api/audit-log");
+                const logs = await res.json();
+                const container = document.getElementById("audit-log-content");
+                container.innerHTML = "";
+
+                logs.forEach(l => {
+                    container.innerHTML += `
+                        <div class="p-3 bg-slate-900 text-slate-200 rounded-xl space-y-1">
+                            <div class="flex justify-between text-[11px] text-slate-400">
+                                <span class="font-bold text-sky-400">${l.agent_or_user}</span>
+                                <span>${new Date(l.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div class="font-bold text-emerald-400 text-xs">${l.action_type}</div>
+                            <pre class="text-[10px] text-slate-300 whitespace-pre-wrap">${JSON.stringify(l.details, null, 2)}</pre>
+                        </div>
+                    `;
+                });
+
+                document.getElementById("modal-audit").classList.remove("hidden");
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add("hidden");
+        }
+
+        async function triggerPipeline() {
+            await fetch("/api/pipeline/run", { method: "POST" });
+            fetchOverview();
+            fetchOpportunities();
+            alert("Agent pipeline re-analysis complete!");
+        }
+
+        function renderOverviewChart() {
+            const ctx = document.getElementById("chart-overview-trend").getContext("2d");
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6'],
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: [125000, 142000, 138000, 165000, 182000, 210000],
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderSegmentsPie() {
+            const ctx = document.getElementById("chart-segments-pie").getContext("2d");
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Young Adults (18-25)', 'Tech Enthusiasts (26-40)', 'Value Seekers (41+)'],
+                    datasets: [{
+                        data: [35, 45, 20],
+                        backgroundColor: ['#0284c7', '#10b981', '#f59e0b']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    </script>
+</body>
+</html>
